@@ -1,56 +1,120 @@
+//banker algo for multiple resource instances to avoid the deadlock
 #include<bits/stdc++.h>
 using namespace std;
-class job{
-    public:
-        int AT,WT,TAT,BT,PRO;
-};
-bool sort_by_at(job x, job y){
-    return x.AT<y.AT;
-}
 int main(){
-    job *a;
-    int n,*temp;
-    int i=0,t=0,short_P;
-    float total_WT=0, total_TAT=0,Avg_WT,Avg_TAT;
-    printf("Enter the number of the process\n");
-	cin>>n;
-	a = new job[n+1]; // dynamically initialise the memory of class object a
-	temp = new int[n];
-    cout<<"Enter the process id, arrival time, burst time respectively,"<<n<<" times\n";
-    for(int i=0;i<n;i++)
-    {
-		cin>>a[i].PRO>>a[i].AT>>a[i].BT;
-        // copying the burst time in
-        // a temp array for the further use
-        // in calculation of WT
-        temp[i]=a[i].BT;
-    }
-    sort(a, a+n,sort_by_at);
-    while(i!=n){
-        if(a[i].AT<=t){
-            t+=a[i].BT;
-            a[i].WT = t-a[i].BT-a[i].AT;
-            a[i].TAT = a[i].WT+a[i].BT;
-            // total calculation
-            total_WT+=a[i].WT;
-            total_TAT+=a[i].TAT;
-            i++;
-        }
-        else{
-            t++;
+    int pro, res;
+    cout<<"Enter the number of processes:- ";
+    cin>>pro;
+    cout<<"\nEnter the number of resources:- ";
+    cin>>res;
+    int alloc[pro][res], max_req[pro][res],avail[res], need[pro][res];
+    cout<<"\nEnter the Allocation matrix:- \n";
+    for(int i=0; i<pro; i++){
+        for(int j=0; j<res; j++){
+            cin>>alloc[i][j];
         }
     }
-    Avg_WT=total_WT/n;
-    Avg_TAT=total_TAT/n;
+    cout<<"\nEnter the max request matrix:- \n";
+    for(int i=0; i<pro; i++){
+        for(int j=0; j<res; j++){
+            cin>>max_req[i][j];
+            if(max_req[i][j] - alloc[i][j]<=0)
+                need[i][j] = 0;
+            else
+                need[i][j] =max_req[i][j] - alloc[i][j];
+        }
+    }
+    cout<<"\nEnter the availability of the resources:- \n";
+    for(int i=0; i<res; i++){
+        cin>>avail[i];
+    }
+    int done =0, safe ;
+    vector<int>safe_sequence; // take the safe sequence in it
     
-    // printing of the answer
-	cout<<endl<<"Final Result::"<<endl;
-    cout<<"Process Id\tWaiting Time\tTurn Around Time\n";
-    for(int i=0;i<n;i++)
-    {
-		cout<<a[i].PRO<<"\t\t"<<a[i].WT<<"\t\t"<<a[i].TAT<<endl;
+    cout<<"\nYour input is:- \n";
+    cout<<"\nThe allocated resource table is:-\n";
+    for(int i=0; i<pro; i++){
+        for(int j=0; j<res; j++){
+            cout<<"\t"<<alloc[i][j];
+        }
+        cout<<endl;
     }
-    printf("Avg waiting time of the process is %.2f\n",Avg_WT);
-    printf("Avg turn around time of the process %.2f\n",Avg_TAT);
+    cout<<"\nThe maximum request table is:- \n";
+    for(int i=0; i<pro; i++){
+        for(int j=0; j<res; j++){
+            cout<<"\t"<<max_req[i][j];
+        }
+        cout<<endl;
+    }
+    cout<<"\nThe available vector is:- \n";
+    for(int j=0; j<res; j++){
+        cout<<"\t"<<avail[j];
+    }
 
+    // below loop check wether there is initially 0 int need matrix    
+    for(int i =0; i<pro; i++){
+        int zeroes = 0;
+        for(int j =0; j<res; j++){
+            if(need[i][j] == 0){
+                zeroes++;
+            }
+        }
+        if(zeroes == res){
+            for(int j=0; j<res; j++){
+                    // need[i][j] = 0;
+                    avail[j]+=alloc[i][j];
+                }
+            cout<<"\nProcess "<<i<<" is executing...\n";
+            cout<<"\nAvailaible vector:- ";
+            for(auto j:avail){
+                cout<<"\t"<<j;
+            }
+            cout<<endl;
+            safe_sequence.push_back(i);
+            done++;
+        }
+    }
+
+    // Below do while loop check wether the system is safe or not and if its safe then what is the safe sequence
+    do{
+        safe = 0;
+        for(int i=0; i<pro; i++){
+            int flag = 0;
+            int zeroes = 0;
+            for(int j=0; j<res; j++){
+                if(need[i][j] == 0){
+                    zeroes++;
+                }
+                if(need[i][j]>avail[j] or zeroes == res){
+                    flag = 1;
+                    break;
+                }
+            }
+            if(flag == 0){
+                for(int j=0; j<res; j++){
+                    need[i][j] = 0;
+                    avail[j]+=alloc[i][j];
+                }
+                cout<<"\nProcess "<<i<<" is executing...\n";
+                cout<<"\nAvailaible vector:- ";
+                for(auto j:avail){
+                    cout<<"\t"<<j;
+                }
+                cout<<endl;
+                safe_sequence.push_back(i);
+                done++;
+                safe = 1;
+            }
+        }
+    }while(done!=pro and safe==1);
+    if(done<pro){
+        cout<<"\n\tSystem is in unsafe state";
+    }
+    else{
+        cout<<"\nSystem is in safe state and safe sequence is:- \n";
+        for(int i=0; i<pro; i++){
+            cout<<"\t"<<safe_sequence[i];
+        }
+    }
+    return 0;
 }
